@@ -1,0 +1,223 @@
+{
+  "browser": {
+    "enabled": true,
+    "headless": true
+  },
+
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "YOUR_PRIMARY_MODEL",
+        "fallbacks": ["YOUR_FALLBACK_MODEL"]
+      },
+      "workspace": "YOUR_WORKSPACE_PATH",
+      "memorySearch": {
+        "provider": "openai",
+        "model": "text-embedding-3-small",
+        "query": {
+          "hybrid": {
+            "enabled": true,
+            "vectorWeight": 0.7,
+            "textWeight": 0.3
+          }
+        }
+      },
+      "contextPruning": {
+        "mode": "cache-ttl",
+        "ttl": "1h"
+      },
+      "compaction": {
+        "mode": "safeguard",
+        "memoryFlush": {
+          "enabled": true,
+          "softThresholdTokens": 60000,
+          "prompt": "Before compaction, APPEND durable notes to memory/YYYY-MM-DD.md (do NOT overwrite — read the file first if it exists, then add new entries below existing content). Save: (1) decisions made, (2) preferences and communication rules, (3) ongoing project state, (4) important config changes. Use concise bullet points with timestamps. Do not write secrets unless explicitly asked. If MEMORY.md needs updating with distilled long-term insights, do that too. Reply with NO_REPLY if there is nothing durable to save.",
+          "systemPrompt": "Session nearing compaction. Store durable memories now."
+        }
+      },
+      "heartbeat": {
+        "every": "60m",
+        "activeHours": {
+          "start": "07:00",
+          "end": "22:00",
+          "timezone": "YOUR_TIMEZONE"
+        },
+        "model": "anthropic/claude-haiku-4-5",
+        "target": "last",
+        "directPolicy": "block",
+        "lightContext": true
+      },
+      "subagents": {
+        "maxConcurrent": 5,
+        "maxSpawnDepth": 3,
+        "maxChildrenPerAgent": 3,
+        "model": "YOUR_PRIMARY_MODEL",
+        "runTimeoutSeconds": 1800
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "name": "YOUR_MAIN_AGENT_NAME",
+        "model": {
+          "primary": "YOUR_PRIMARY_MODEL",
+          "fallbacks": ["YOUR_FALLBACK_MODEL"]
+        }
+      },
+      {
+        "id": "coder",
+        "name": "YOUR_CODER_AGENT_NAME",
+        "workspace": "YOUR_PROJECTS_PATH/coder-workspace",
+        "agentDir": "YOUR_OPENCLAW_PATH/agents/coder/agent",
+        "model": {
+          "primary": "anthropic/claude-sonnet-4-6",
+          "fallbacks": ["anthropic/claude-haiku-4-5"]
+        }
+      },
+      {
+        "id": "researcher",
+        "name": "YOUR_RESEARCHER_AGENT_NAME",
+        "workspace": "YOUR_PROJECTS_PATH/researcher-workspace",
+        "agentDir": "YOUR_OPENCLAW_PATH/agents/researcher/agent",
+        "model": {
+          "primary": "anthropic/claude-sonnet-4-6",
+          "fallbacks": ["anthropic/claude-haiku-4-5"]
+        }
+      }
+    ]
+  },
+
+  "tools": {
+    "profile": "full",
+    "web": {
+      "search": {
+        "enabled": true,
+        "provider": "perplexity",
+        "perplexity": {
+          "apiKey": "YOUR_PERPLEXITY_API_KEY"
+        }
+      },
+      "fetch": { "enabled": true }
+    },
+    "sessions": { "visibility": "all" },
+    "agentToAgent": {
+      "enabled": true,
+      "allow": ["main", "coder", "researcher"]
+    },
+    "elevated": {
+      "enabled": true,
+      "allowFrom": {
+        "telegram": ["YOUR_TELEGRAM_USER_ID"]
+      }
+    }
+  },
+
+  "bindings": [
+    {
+      "type": "route",
+      "agentId": "main",
+      "match": {
+        "channel": "telegram"
+      }
+    }
+  ],
+
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "bash": true,
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+
+  "session": {
+    "dmScope": "per-channel-peer",
+    "reset": {
+      "mode": "daily",
+      "atHour": 4,
+      "idleMinutes": 180
+    },
+    "resetByType": {
+      "direct": { "mode": "idle", "idleMinutes": 360 },
+      "group": { "mode": "idle", "idleMinutes": 120 },
+      "thread": { "mode": "idle", "idleMinutes": 180 }
+    },
+    "agentToAgent": {
+      "maxPingPongTurns": 5
+    },
+    "maintenance": {
+      "mode": "enforce",
+      "pruneAfter": "21d",
+      "maxEntries": 600,
+      "rotateBytes": "10mb",
+      "maxDiskBytes": "750mb",
+      "highWaterBytes": "600mb"
+    }
+  },
+
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "boot-md": { "enabled": true },
+        "bootstrap-extra-files": { "enabled": true },
+        "command-logger": { "enabled": true },
+        "session-memory": { "enabled": true }
+      }
+    }
+  },
+
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "token": "YOUR_TELEGRAM_BOT_TOKEN",
+      "dmPolicy": "pairing",
+      "groupPolicy": "allowlist",
+      "streaming": "partial",
+      "allowedUsers": ["YOUR_TELEGRAM_USER_ID"],
+      "groups": {
+        "YOUR_GROUP_CHAT_ID": {
+          "users": ["YOUR_TELEGRAM_USER_ID"]
+        }
+      },
+      "execApprovals": {
+        "enabled": true,
+        "approvers": ["YOUR_TELEGRAM_USER_ID"],
+        "cleanupAfterResolve": true
+      },
+      "threadBindings": {
+        "spawnSubagentSessions": true,
+        "spawnAcpSessions": true
+      }
+    }
+  },
+
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "auth": {
+      "mode": "token"
+    }
+  },
+
+  "plugins": {
+    "slots": {
+      "memory": "memory-lancedb"
+    },
+    "entries": {
+      "memory-lancedb": {
+        "enabled": true,
+        "config": {
+          "autoRecall": true,
+          "autoCapture": true,
+          "captureMaxChars": 2000,
+          "embedding": {
+            "apiKey": "YOUR_OPENAI_API_KEY",
+            "model": "text-embedding-3-small"
+          }
+        }
+      }
+    }
+  }
+}

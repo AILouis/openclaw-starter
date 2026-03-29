@@ -1,0 +1,95 @@
+# PCSI Methodology Configuration
+# Edit weights, signals, and thresholds here.
+
+lookback_days: 504  # 2 years of trading days
+
+staleness:
+  daily_max_days: 7
+  fred_max_days: 45
+
+pillars:
+  credit_spreads:
+    weight: 0.35
+    signals:
+      - name: "HY OAS"
+        source: fred
+        series: "BAMLH0A0HYM2"
+        polarity: -1
+        weight: 0.40
+      - name: "IG OAS"
+        source: fred
+        series: "BAMLC0A0CM"
+        polarity: -1
+        weight: 0.25
+      - name: "CCC-BB Spread"
+        source: fred_computed
+        series_a: "BAMLH0A3HYC"
+        series_b: "BAMLH0A2HYB"
+        operation: "subtract"  # A - B
+        polarity: -1
+        weight: 0.20
+      - name: "2Y-10Y Yield Curve"
+        source: fred
+        series: "T10Y2Y"
+        polarity: 1
+        weight: 0.15
+
+  credit_flows:
+    weight: 0.30
+    signals:
+      - name: "BKLN (Senior Loan ETF)"
+        source: yfinance
+        ticker: "BKLN"
+        polarity: 1
+        weight: 0.30
+      - name: "HYG (HY Bond ETF)"
+        source: yfinance
+        ticker: "HYG"
+        polarity: 1
+        weight: 0.25
+      - name: "ARCC (BDC Proxy)"
+        source: yfinance
+        ticker: "ARCC"
+        polarity: 1
+        weight: 0.25
+      - name: "JAAA (CLO AAA ETF)"
+        source: yfinance
+        ticker: "JAAA"
+        polarity: 1
+        weight: 0.20
+
+  macro_environment:
+    weight: 0.35
+    signals:
+      - name: "VIX"
+        source: yfinance
+        ticker: "^VIX"
+        polarity: -1
+        weight: 0.50
+      - name: "Fed Funds Rate"
+        source: fred
+        series: "DFF"
+        polarity: -1
+        weight: 0.50
+
+bands:
+  - label: "Very Bullish"
+    min: 80
+    max: 100
+    color: "#2ecc71"
+  - label: "Bullish"
+    min: 60
+    max: 80
+    color: "#27ae60"
+  - label: "Neutral"
+    min: 40
+    max: 60
+    color: "#f39c12"
+  - label: "Bearish"
+    min: 20
+    max: 40
+    color: "#e74c3c"
+  - label: "Very Bearish"
+    min: 0
+    max: 20
+    color: "#c0392b"

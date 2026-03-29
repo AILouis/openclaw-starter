@@ -1,0 +1,10 @@
+# Never commit filled-in config with real API keys
+openclaw.json
+
+# Memory files contain personal context
+workspace/memory/*.md
+!workspace/memory/.gitkeep
+
+# Keep templates, ignore filled-in versions
+workspace/SOUL.md
+workspace/IDENTITY.md
